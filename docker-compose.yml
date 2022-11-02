@@ -1,0 +1,62 @@
+version: '3.6'
+
+services:
+  mysqldima:  
+    image: mysql:5.7.39-debian
+    container_name: mysql-57
+    restart: always
+    env_file: .env
+    volumes:
+      - ./mysql/data:/var/lib/mysql
+    command: --default-authentication-plugin=mysql_native_password
+    networks:
+      mynet:
+        ipv4_address: 10.5.0.2
+
+  nginx:
+    build: ./nginx
+    container_name: nginx-geo122
+    restart: always
+    ports:
+      - 80:80
+      - 443:443
+    volumes:
+      - ./GeoLite2-Country.mmdb:/usr/share/geoip/GeoLite2-Country.mmdb
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./nginx/conf:/etc/nginx/conf.d
+      - ./nginx/logs:/var/log/nginx
+      - ./nginx/certs:/etc/ssl/private
+    networks:
+      mynet:
+        ipv4_address: 10.5.0.3
+
+  apache_php:
+    build: ./apache
+#    image: php:7.2-apache
+    container_name: apache-php
+    restart: always
+    expose:
+      - "8080"
+      - "443"
+    volumes:
+      - ./www/html:/var/www
+      - ./apache/conf/apache2.conf:/etc/apache2/apache2.conf
+      - ./apache/conf/sites-available:/etc/apache2/sites-available
+      - ./apache/conf/sites-enabled:/etc/apache2/sites-enabled
+      - ./apache/logs:/var/log/apache2
+    networks:
+      mynet:
+        ipv4_address: 10.5.0.4
+
+
+volumes:
+  dbfile:
+
+networks:
+  mynet:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 10.5.0.0/24
+#        gateway: 10.5.0.1
